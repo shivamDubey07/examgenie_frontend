@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { login } from '../services/api'
+import toast from 'react-hot-toast'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -17,6 +19,10 @@ export default function Login() {
     setError('')
     try {
       console.log('Login:', form)
+      const response = await login(form)
+      localStorage.setItem('token', response.data.access_token)
+      localStorage.setItem('token_type', response.data.token_type)
+      toast.success('Login successful, redirecting...')
       navigate('/dashboard')
     } catch (err) {
       setError('Invalid email or password.',err)
