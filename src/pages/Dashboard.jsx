@@ -1,38 +1,8 @@
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-
-import ConfirmModal from '../Modals/ConfirmModal'  // adjust path as needed
-
-const mockExams = [
-  {
-    id: 1,
-    name: "Python Final Exam",
-    subject: "Computer Science",
-    topic: "OOP",
-    difficulty: "Medium",
-    questions: 10,
-    date: "Mar 10, 2026",
-  },
-  {
-    id: 2,
-    name: "Math Test",
-    subject: "Mathematics",
-    topic: "Calculus",
-    difficulty: "Hard",
-    questions: 5,
-    date: "Mar 9, 2026",
-  },
-  {
-    id: 3,
-    name: "History Quiz",
-    subject: "History",
-    topic: "World War II",
-    difficulty: "Easy",
-    questions: 8,
-    date: "Mar 8, 2026",
-  },
-];
+import { useState, useEffect } from "react";
+import { getMyTests } from '../services/api';
+import ConfirmModal from '../Modals/ConfirmModal';
 
 const difficultyColor = {
   Easy: "text-green-400 bg-green-400/10",
@@ -43,13 +13,36 @@ const difficultyColor = {
 export default function Dashboard() {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const username = localStorage.getItem('username') || 'User';
 
-  const handleDelete = async () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("token_type");
+  useEffect(() => {
+    const fetchExams = async () => {
+      try {
+        const response = await getMyTests();
+        setExams(response.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExams();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('token_type');
+    localStorage.removeItem('username');
     toast.success("Logged out successfully!");
-    navigate("/login");
+    navigate('/login');
   };
+
+  const scoredExams = exams.filter(e => e.score);
+  const avgScore = scoredExams.length
+    ? Math.round(scoredExams.reduce((a, b) => a + b.score, 0) / scoredExams.length)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 text-white">
@@ -59,17 +52,7 @@ export default function Dashboard() {
           Exam<span className="text-blue-400">Genie</span>
         </h1>
         <div className="flex items-center gap-4">
-          <span className="text-blue-200 text-sm">Hi, Charlie 👋</span>
-          {showConfirm && (
-            <ConfirmModal
-              message="Are you sure you want to logout?"
-              onConfirm={() => {
-                handleDelete();
-                setShowConfirm(false);
-              }}
-              onCancel={() => setShowConfirm(false)}
-            />
-          )}
+          <span className="text-blue-200 text-sm">Hi, {username} 👋</span>
           <button
             onClick={() => setShowConfirm(true)}
             className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition"
@@ -78,6 +61,18 @@ export default function Dashboard() {
           </button>
         </div>
       </nav>
+
+      {/* Confirm Modal — rendered outside nav, at top level */}
+      {showConfirm && (
+        <ConfirmModal
+          message="Are you sure you want to logout?"
+          onConfirm={() => {
+            handleLogout();
+            setShowConfirm(false);
+          }}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
 
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
@@ -99,9 +94,9 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { label: "Total Exams", value: "3" },
-            { label: "Exams Taken", value: "2" },
-            { label: "Avg Score", value: "74%" },
+            { label: 'Total Exams', value: exams.length },
+            { label: 'Exams Taken', value: exams.filter(e => e.attempted).length },
+            { label: 'Avg Score', value: avgScore !== null ? `${avgScore}%` : '—' },
           ].map((s, i) => (
             <div key={i} className="bg-white/10 rounded-2xl p-5 text-center">
               <div className="text-3xl font-bold text-blue-400">{s.value}</div>
@@ -110,39 +105,64 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Exam List */}
-        <div className="flex flex-col gap-4">
-          {mockExams.map((exam) => (
-            <div
-              key={exam.id}
-              className="bg-white/10 rounded-2xl p-5 flex items-center justify-between hover:bg-white/15 transition"
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-20">
+            <svg className="animate-spin h-10 w-10 mx-auto mb-4 text-blue-400" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            <p className="text-blue-200">Loading your exams...</p>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && exams.length === 0 && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">📝</div>
+            <h3 className="text-xl font-semibold mb-2">No exams yet</h3>
+            <p className="text-blue-200 text-sm mb-6">Generate your first AI exam and it will appear here</p>
+            <button
+              onClick={() => navigate('/generate')}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-400 rounded-xl font-semibold transition"
             >
-              <div>
-                <h3 className="font-semibold text-lg">{exam.name}</h3>
-                <p className="text-blue-200 text-sm mt-0.5">
-                  {exam.subject} · {exam.topic} · {exam.questions} questions ·{" "}
-                  {exam.date}
-                </p>
+              ✨ Generate First Exam
+            </button>
+          </div>
+        )}
+
+        {/* Exam List */}
+        {!loading && exams.length > 0 && (
+          <div className="flex flex-col gap-4">
+            {exams.map((exam) => (
+              <div
+                key={exam.id}
+                className="bg-white/10 rounded-2xl p-5 flex items-center justify-between hover:bg-white/15 transition"
+              >
+                <div>
+                  <h3 className="font-semibold text-lg">{exam.name}</h3>
+                  <p className="text-blue-200 text-sm mt-0.5">
+                    {exam.subject} · {exam.topic} · {exam.questions?.length} questions · {new Date(exam.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${difficultyColor[exam.difficulty]}`}>
+                    {exam.difficulty}
+                  </span>
+                  <button
+                    onClick={() => navigate(`/exam/${exam.id}`)}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-400 rounded-lg text-sm font-medium transition"
+                  >
+                    Take Exam
+                  </button>
+                  <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition">
+                    📄 PDF
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span
-                  className={`text-xs font-medium px-3 py-1 rounded-full ${difficultyColor[exam.difficulty]}`}
-                >
-                  {exam.difficulty}
-                </span>
-                <button
-                  onClick={() => navigate(`/exam/${exam.id}`)}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-400 rounded-lg text-sm font-medium transition"
-                >
-                  Take Exam
-                </button>
-                <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition">
-                  📄 PDF
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export default function Login() {
       toast.success('Login successful, redirecting...')
       navigate('/dashboard')
     } catch (err) {
-      setError('Invalid email or password.',err)
+      setError(err.response?.data?.detail || 'Invalid email or password.')
     } finally {
       setLoading(false)
     }

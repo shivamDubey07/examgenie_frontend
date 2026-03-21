@@ -1,32 +1,59 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-
-const mockQuestions = [
-  {
-    id: 1,
-    question: 'What is encapsulation in OOP?',
-    options: { A: 'Hiding internal data and exposing only necessary parts', B: 'Creating multiple objects', C: 'Inheriting from a parent class', D: 'Overloading functions' },
-  },
-  {
-    id: 2,
-    question: 'Which keyword is used to create a class in Python?',
-    options: { A: 'def', B: 'object', C: 'class', D: 'new' },
-  },
-  {
-    id: 3,
-    question: 'What does inheritance allow in OOP?',
-    options: { A: 'A class to use methods of another class', B: 'A function to return multiple values', C: 'Variables to change type', D: 'Loops to run faster' },
-  },
-]
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { getTest, submitAttempt } from '../services/api'
 
 export default function Exam() {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const [exam, setExam] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState({})
-  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const question = mockQuestions[current]
-  const total = mockQuestions.length
+  // Load exam when page opens
+  useEffect(() => {
+    const fetchExam = async () => {
+      try {
+        const response = await getTest(id)
+        setExam(response.data)
+      } catch (err) {
+        setError('Failed to load exam.',err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchExam()
+  }, [id])
+
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-white text-center">
+        <svg className="animate-spin h-10 w-10 mx-auto mb-4" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        <p className="text-blue-200">Loading exam...</p>
+      </div>
+    </div>
+  )
+
+  if (error) return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-red-400 text-lg mb-4">{error}</p>
+        <button onClick={() => navigate('/dashboard')}
+          className="px-6 py-3 bg-blue-500 rounded-xl text-white">
+          Back to Dashboard
+        </button>
+      </div>
+    </div>
+  )
+
+  const questions = exam.questions
+  const question = questions[current]
+  const total = questions.length
   const progress = ((current + 1) / total) * 100
 
   const handleAnswer = (option) => {
@@ -41,13 +68,23 @@ export default function Exam() {
     if (current > 0) setCurrent(current - 1)
   }
 
-  const handleSubmit = () => {
-    setSubmitted(true)
-    setTimeout(() => navigate('/results/1'), 1000)
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    try {
+      const response = await submitAttempt({
+        test_id: parseInt(id),
+        answers: answers
+      })
+      navigate(`/results/${response.data.id}`)
+    } catch (err) {
+      setError('Failed to submit exam.',err)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const isAnswered = (id) => answers[id] !== undefined
-  const allAnswered = mockQuestions.every(q => isAnswered(q.id))
+  const allAnswered = questions.every(q => isAnswered(q.id))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 text-white">
@@ -55,7 +92,7 @@ export default function Exam() {
       {/* Navbar */}
       <nav className="flex justify-between items-center px-10 py-5 border-b border-white/10">
         <h1 className="text-2xl font-bold">Exam<span className="text-blue-400">Genie</span></h1>
-        <span className="text-blue-200 text-sm">Python Final Exam</span>
+        <span className="text-blue-200 text-sm">{exam.name}</span>
       </nav>
 
       <div className="max-w-2xl mx-auto px-6 py-10">
@@ -67,10 +104,8 @@ export default function Exam() {
             <span>{Object.keys(answers).length} answered</span>
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
-            <div
-              className="bg-blue-400 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="bg-blue-400 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }} />
           </div>
         </div>
 
@@ -79,7 +114,6 @@ export default function Exam() {
           <p className="text-sm text-blue-300 mb-3">Question {current + 1}</p>
           <h2 className="text-xl font-semibold mb-6">{question.question}</h2>
 
-          {/* Options */}
           <div className="flex flex-col gap-3">
             {Object.entries(question.options).map(([key, value]) => (
               <button
@@ -103,19 +137,14 @@ export default function Exam() {
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
-          <button
-            onClick={handlePrev}
-            disabled={current === 0}
+          <button onClick={handlePrev} disabled={current === 0}
             className="px-6 py-3 bg-white/10 hover:bg-white/20 disabled:opacity-30 rounded-xl font-medium transition">
             ← Previous
           </button>
 
-          {/* Question dots */}
           <div className="flex gap-2">
-            {mockQuestions.map((q, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
+            {questions.map((q, i) => (
+              <button key={i} onClick={() => setCurrent(i)}
                 className={`w-3 h-3 rounded-full transition
                   ${i === current ? 'bg-blue-400' : isAnswered(q.id) ? 'bg-green-400' : 'bg-white/20'}`}
               />
@@ -123,17 +152,15 @@ export default function Exam() {
           </div>
 
           {current < total - 1 ? (
-            <button
-              onClick={handleNext}
+            <button onClick={handleNext}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-400 rounded-xl font-medium transition">
               Next →
             </button>
           ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!allAnswered || submitted}
+            <button onClick={handleSubmit}
+              disabled={!allAnswered || submitting}
               className="px-6 py-3 bg-green-500 hover:bg-green-400 disabled:opacity-50 rounded-xl font-medium transition">
-              {submitted ? 'Submitting...' : '✅ Submit Exam'}
+              {submitting ? 'Submitting...' : '✅ Submit Exam'}
             </button>
           )}
         </div>

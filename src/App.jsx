@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Generate from './pages/Generate'
 import Exam from './pages/Exam'
 import Results from './pages/Results'
+import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
   return (
@@ -16,10 +17,18 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/generate" element={<Generate />} />
-        <Route path="/exam/:id" element={<Exam />} />
-        <Route path="/results/:id" element={<Results />} />
+        <Route path="/dashboard" element={
+        <ProtectedRoute><Dashboard /></ProtectedRoute>
+      } />
+        <Route path="/generate" element={
+        <ProtectedRoute><Generate /></ProtectedRoute>
+      } />
+        <Route path="/exam/:id" element={
+        <ProtectedRoute><Exam /></ProtectedRoute>
+      } />
+        <Route path="/results/:id" element={
+        <ProtectedRoute><Results /></ProtectedRoute>
+      } />
       </Routes>
     </>
   )

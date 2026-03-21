@@ -4,39 +4,45 @@ import { register } from '../services/api'
 import toast from 'react-hot-toast'
 
 export default function Register() {
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError("");
     try {
       console.log('Register:', form)
       const response = await register(form)
       toast.success(response.data)
       navigate('/login')
     } catch (err) {
-      setError('Registration failed. Please try again.',err)
+      setError(
+        err.response?.data?.detail || "Registration failed. Please try again.",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur rounded-2xl p-8 w-full max-w-md">
-        
-        <h1 onClick={() => navigate('/')} className="text-2xl font-bold text-white text-center mb-1 cursor-pointer">
+        <h1
+          onClick={() => navigate("/")}
+          className="text-2xl font-bold text-white text-center mb-1 cursor-pointer"
+        >
           Exam<span className="text-blue-400">Genie</span>
         </h1>
-        <p className="text-blue-200 text-center text-sm mb-8">Create your free account</p>
+        <p className="text-blue-200 text-center text-sm mb-8">
+          Create your free account
+        </p>
 
         {error && (
           <div className="bg-red-500/20 text-red-300 text-sm px-4 py-3 rounded-lg mb-6">
@@ -85,19 +91,22 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition mt-2">
-            {loading ? 'Creating account...' : 'Create Account'}
+            className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition mt-2"
+          >
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 
         <p className="text-blue-200 text-sm text-center mt-6">
-          Already have an account?{' '}
-          <span onClick={() => navigate('/login')} className="text-blue-400 hover:underline cursor-pointer">
+          Already have an account?{" "}
+          <span
+            onClick={() => navigate("/login")}
+            className="text-blue-400 hover:underline cursor-pointer"
+          >
             Login
           </span>
         </p>
-
       </div>
     </div>
-  )
+  );
 }

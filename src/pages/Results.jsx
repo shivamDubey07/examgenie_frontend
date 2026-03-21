@@ -1,42 +1,54 @@
-import { useNavigate } from 'react-router-dom'
-
-const mockResults = {
-  examName: 'Python Final Exam',
-  score: 7,
-  total: 10,
-  timeTaken: '8 mins',
-  questions: [
-    {
-      id: 1,
-      question: 'What is encapsulation in OOP?',
-      options: { A: 'Hiding internal data and exposing only necessary parts', B: 'Creating multiple objects', C: 'Inheriting from a parent class', D: 'Overloading functions' },
-      correct_answer: 'A',
-      user_answer: 'A',
-      explanation: 'Encapsulation means bundling data and methods together while hiding internal details from outside.',
-    },
-    {
-      id: 2,
-      question: 'Which keyword is used to create a class in Python?',
-      options: { A: 'def', B: 'object', C: 'class', D: 'new' },
-      correct_answer: 'C',
-      user_answer: 'A',
-      explanation: 'In Python the "class" keyword is used to define a class.',
-    },
-    {
-      id: 3,
-      question: 'What does inheritance allow in OOP?',
-      options: { A: 'A class to use methods of another class', B: 'A function to return multiple values', C: 'Variables to change type', D: 'Loops to run faster' },
-      correct_answer: 'A',
-      user_answer: 'A',
-      explanation: 'Inheritance allows a class to reuse and extend the properties and methods of another class.',
-    },
-  ]
-}
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { getResults } from '../services/api'
 
 export default function Results() {
   const navigate = useNavigate()
-  const { examName, score, total, timeTaken, questions } = mockResults
-  const percentage = Math.round((score / total) * 100)
+  const { id } = useParams()
+  const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      try {
+        const response = await getResults(id)
+        setResults(response.data)
+      } catch (err) {
+        setError('Failed to load results.',err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchResults()
+  }, [id])
+
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-white text-center">
+        <svg className="animate-spin h-10 w-10 mx-auto mb-4" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        <p className="text-blue-200">Loading results...</p>
+      </div>
+    </div>
+  )
+
+  if (error) return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-red-400 text-lg mb-4">{error}</p>
+        <button onClick={() => navigate('/dashboard')}
+          className="px-6 py-3 bg-blue-500 rounded-xl text-white">
+          Back to Dashboard
+        </button>
+      </div>
+    </div>
+  )
+
+  const { exam_name, total, correct, submitted_at, questions } = results
+  const percentage = Math.round((correct / total) * 100)
 
   const getGrade = () => {
     if (percentage >= 90) return { label: 'Excellent!', color: 'text-green-400' }
@@ -63,15 +75,15 @@ export default function Results() {
 
         {/* Score Card */}
         <div className="bg-white/10 backdrop-blur rounded-2xl p-8 text-center mb-8">
-          <p className="text-blue-200 text-sm mb-1">{examName}</p>
+          <p className="text-blue-200 text-sm mb-1">{exam_name}</p>
           <div className="text-7xl font-extrabold text-blue-400 my-4">{percentage}%</div>
           <p className={`text-2xl font-bold mb-4 ${grade.color}`}>{grade.label}</p>
 
           <div className="grid grid-cols-3 gap-4 mt-6">
             {[
-              { label: 'Correct', value: score, color: 'text-green-400' },
-              { label: 'Wrong', value: total - score, color: 'text-red-400' },
-              { label: 'Time Taken', value: timeTaken, color: 'text-blue-400' },
+              { label: 'Correct', value: correct, color: 'text-green-400' },
+              { label: 'Wrong', value: total - correct, color: 'text-red-400' },
+              { label: 'Submitted', value: new Date(submitted_at).toLocaleDateString(), color: 'text-blue-400' },
             ].map((s, i) => (
               <div key={i} className="bg-white/10 rounded-xl p-3">
                 <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -87,48 +99,54 @@ export default function Results() {
             className="flex-1 py-3 bg-blue-500 hover:bg-blue-400 rounded-xl font-semibold transition">
             ✨ Generate New Exam
           </button>
-          <button
+          <button onClick={() => navigate('/dashboard')}
             className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition">
-            📄 Download PDF
+            📊 My Dashboard
           </button>
         </div>
 
         {/* Question Review */}
-        <h3 className="text-lg font-semibold mb-4">Answer Review</h3>
-        <div className="flex flex-col gap-4">
-          {questions.map((q, i) => {
-            const isCorrect = q.user_answer === q.correct_answer
-            return (
-              <div key={q.id} className={`rounded-2xl p-6 border ${isCorrect ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'}`}>
-                
-                <div className="flex items-start gap-3 mb-4">
-                  <span className="text-lg">{isCorrect ? '✅' : '❌'}</span>
-                  <p className="font-medium">{i + 1}. {q.question}</p>
-                </div>
+        {questions && (
+          <>
+            <h3 className="text-lg font-semibold mb-4">Answer Review</h3>
+            <div className="flex flex-col gap-4">
+              {questions.map((q, i) => {
+                const isCorrect = q.user_answer === q.correct_answer
+                return (
+                  <div key={q.id} className={`rounded-2xl p-6 border ${isCorrect
+                    ? 'border-green-500/30 bg-green-500/10'
+                    : 'border-red-500/30 bg-red-500/10'}`}>
 
-                <div className="flex flex-col gap-2 mb-4">
-                  {Object.entries(q.options).map(([key, value]) => (
-                    <div key={key}
-                      className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2
-                        ${key === q.correct_answer ? 'bg-green-500/20 text-green-300' : ''}
-                        ${key === q.user_answer && !isCorrect ? 'bg-red-500/20 text-red-300' : ''}
-                        ${key !== q.correct_answer && key !== q.user_answer ? 'text-blue-200' : ''}
-                      `}>
-                      <span className="font-bold">{key}.</span> {value}
-                      {key === q.correct_answer && <span className="ml-auto text-xs">✓ Correct</span>}
-                      {key === q.user_answer && !isCorrect && <span className="ml-auto text-xs">✗ Your answer</span>}
+                    <div className="flex items-start gap-3 mb-4">
+                      <span className="text-lg">{isCorrect ? '✅' : '❌'}</span>
+                      <p className="font-medium">{i + 1}. {q.question}</p>
                     </div>
-                  ))}
-                </div>
 
-                <div className="bg-white/10 rounded-lg px-4 py-3 text-sm text-blue-200">
-                  💡 {q.explanation}
-                </div>
+                    <div className="flex flex-col gap-2 mb-4">
+                      {Object.entries(q.options).map(([key, value]) => (
+                        <div key={key}
+                          className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2
+                            ${key === q.correct_answer ? 'bg-green-500/20 text-green-300' : ''}
+                            ${key === q.user_answer && !isCorrect ? 'bg-red-500/20 text-red-300' : ''}
+                            ${key !== q.correct_answer && key !== q.user_answer ? 'text-blue-200' : ''}
+                          `}>
+                          <span className="font-bold">{key}.</span> {value}
+                          {key === q.correct_answer && <span className="ml-auto text-xs">✓ Correct</span>}
+                          {key === q.user_answer && !isCorrect && <span className="ml-auto text-xs">✗ Your answer</span>}
+                        </div>
+                      ))}
+                    </div>
 
-              </div>
-            )
-          })}
-        </div>
+                    <div className="bg-white/10 rounded-lg px-4 py-3 text-sm text-blue-200">
+                      💡 {q.explanation}
+                    </div>
+
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
 
       </div>
     </div>
