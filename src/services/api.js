@@ -28,9 +28,10 @@ api.interceptors.response.use(
 export const register = (data) => api.post('/auth/register', data)
 export const login = (data) => api.post('/auth/login', data)
 
-export const generateExam = (data) => api.post('/tests/generate', data)
+export const generateExam = (data) => api.post('/exam/generate', data)
+export const getExamStatus = (id) => api.get(`/exam/${id}/status`)
+export const getExam = (id) => api.get(`/exam/${id}`)
 export const getMyTests = () => api.get('/tests/my-tests')
-export const getTest = (id) => api.get(`/tests/${id}`)
 
 export const submitAttempt = (data) => api.post('/attempts/submit', data)
 export const getResults = (id) => api.get(`/attempts/${id}`)

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { generateExam } from "../services/api";
+import { useExamGeneration } from "../hooks/useExamGeneration";
 
 export default function Generate() {
   const navigate = useNavigate();
+  const { startGeneration } = useExamGeneration();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -22,15 +24,21 @@ export default function Generate() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await generateExam(form);
-      const examId = response.data.id;
-      navigate(`/exam/${examId}`);
+      const response = await generateExam({
+        title: form.name,
+        subject: form.subject,
+        topic: form.topic,
+        difficulty: form.difficulty.toLowerCase(),
+        num_questions: parseInt(form.num_questions),
+      });
+      const examId = response.data.exam_id;
+      startGeneration(examId);
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       setError(
         err.response?.data?.detail || "Failed to generate exam. Try again.",
       );
-    } finally {
       setLoading(false);
     }
   };
