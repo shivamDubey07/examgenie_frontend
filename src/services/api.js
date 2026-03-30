@@ -31,7 +31,7 @@ export const login = (data) => api.post('/auth/login', data)
 export const generateExam = (data) => api.post('/exam/generate', data)
 export const getExamStatus = (id) => api.get(`/exam/${id}/status`)
 export const getExam = (id) => api.get(`/exam/${id}`)
-export const getMyTests = () => api.get('/tests/my-tests')
+export const getMyTests = () => api.get('/exam/my-exams')
 
 export const submitAttempt = (data) => api.post('/attempts/submit', data)
 export const getResults = (id) => api.get(`/attempts/${id}`)
