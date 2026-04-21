@@ -1,8 +1,9 @@
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getMyTests } from '../services/api';
-import ConfirmModal from '../Modals/ConfirmModal';
+import { getMyTests } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
+import ConfirmModal from "../Modals/ConfirmModal";
 
 const difficultyColor = {
   Easy: "text-green-400 bg-green-400/10",
@@ -15,7 +16,8 @@ export default function Dashboard() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const username = localStorage.getItem('username') || 'User';
+  const { user, logout } = useAuth();
+  const username = user?.username || localStorage.getItem("username") || "User";
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -31,17 +33,17 @@ export default function Dashboard() {
     fetchExams();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('token_type');
-    localStorage.removeItem('username');
+  const handleLogout = async () => {
+    await logout();
     toast.success("Logged out successfully!");
-    navigate('/login');
+    navigate("/login");
   };
 
-  const scoredExams = exams.filter(e => e.score);
+  const scoredExams = exams.filter((e) => e.score);
   const avgScore = scoredExams.length
-    ? Math.round(scoredExams.reduce((a, b) => a + b.score, 0) / scoredExams.length)
+    ? Math.round(
+        scoredExams.reduce((a, b) => a + b.score, 0) / scoredExams.length,
+      )
     : null;
 
   return (
@@ -94,9 +96,15 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'Total Exams', value: exams.length },
-            { label: 'Exams Taken', value: exams.filter(e => e.attempted).length },
-            { label: 'Avg Score', value: avgScore !== null ? `${avgScore}%` : '—' },
+            { label: "Total Exams", value: exams.length },
+            {
+              label: "Exams Taken",
+              value: exams.filter((e) => e.attempted).length,
+            },
+            {
+              label: "Avg Score",
+              value: avgScore !== null ? `${avgScore}%` : "—",
+            },
           ].map((s, i) => (
             <div key={i} className="bg-white/10 rounded-2xl p-5 text-center">
               <div className="text-3xl font-bold text-blue-400">{s.value}</div>
@@ -108,9 +116,24 @@ export default function Dashboard() {
         {/* Loading */}
         {loading && (
           <div className="text-center py-20">
-            <svg className="animate-spin h-10 w-10 mx-auto mb-4 text-blue-400" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            <svg
+              className="animate-spin h-10 w-10 mx-auto mb-4 text-blue-400"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              />
             </svg>
             <p className="text-blue-200">Loading your exams...</p>
           </div>
@@ -121,9 +144,11 @@ export default function Dashboard() {
           <div className="text-center py-20">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold mb-2">No exams yet</h3>
-            <p className="text-blue-200 text-sm mb-6">Generate your first AI exam and it will appear here</p>
+            <p className="text-blue-200 text-sm mb-6">
+              Generate your first AI exam and it will appear here
+            </p>
             <button
-              onClick={() => navigate('/generate')}
+              onClick={() => navigate("/generate")}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-400 rounded-xl font-semibold transition"
             >
               ✨ Generate First Exam
@@ -142,11 +167,14 @@ export default function Dashboard() {
                 <div>
                   <h3 className="font-semibold text-lg">{exam.name}</h3>
                   <p className="text-blue-200 text-sm mt-0.5">
-                    {exam.subject} · {exam.topic} · {exam.questions?.length} questions · {new Date(exam.created_at).toLocaleDateString()}
+                    {exam.subject} · {exam.topic} · {exam.questions?.length}{" "}
+                    questions · {new Date(exam.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${difficultyColor[exam.difficulty]}`}>
+                  <span
+                    className={`text-xs font-medium px-3 py-1 rounded-full ${difficultyColor[exam.difficulty]}`}
+                  >
                     {exam.difficulty}
                   </span>
                   <button

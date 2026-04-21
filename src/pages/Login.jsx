@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { login } from '../services/api'
+import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,11 +19,8 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      console.log('Login:', form)
-      const response = await login(form)
-      localStorage.setItem('token', response.data.access_token)
-      localStorage.setItem('token_type', response.data.token_type)
-      toast.success('Login successful, redirecting...')
+      await login(form)
+      toast.success('Welcome back!')
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid email or password.')
@@ -34,8 +32,10 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur rounded-2xl p-8 w-full max-w-md">
-
-        <h1 onClick={() => navigate('/')} className="text-2xl font-bold text-white text-center mb-1 cursor-pointer">
+        <h1
+          onClick={() => navigate('/')}
+          className="text-2xl font-bold text-white text-center mb-1 cursor-pointer"
+        >
           Exam<span className="text-blue-400">Genie</span>
         </h1>
         <p className="text-blue-200 text-center text-sm mb-8">Welcome back!</p>
@@ -75,18 +75,21 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition mt-2">
+            className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition mt-2"
+          >
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
         <p className="text-blue-200 text-sm text-center mt-6">
           Don't have an account?{' '}
-          <span onClick={() => navigate('/register')} className="text-blue-400 hover:underline cursor-pointer">
+          <span
+            onClick={() => navigate('/register')}
+            className="text-blue-400 hover:underline cursor-pointer"
+          >
             Sign up free
           </span>
         </p>
-
       </div>
     </div>
   )

@@ -4,38 +4,37 @@ import { register } from '../services/api'
 import toast from 'react-hot-toast'
 
 export default function Register() {
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    e.preventDefault()
+    setLoading(true)
+    setError('')
     try {
-      console.log('Register:', form)
       const response = await register(form)
       toast.success(response.data)
       navigate('/login')
     } catch (err) {
       setError(
-        err.response?.data?.detail || "Registration failed. Please try again.",
-      );
+        err.response?.data?.detail || 'Registration failed. Please try again.'
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur rounded-2xl p-8 w-full max-w-md">
         <h1
-          onClick={() => navigate("/")}
+          onClick={() => navigate('/')}
           className="text-2xl font-bold text-white text-center mb-1 cursor-pointer"
         >
           Exam<span className="text-blue-400">Genie</span>
@@ -93,14 +92,14 @@ export default function Register() {
             disabled={loading}
             className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition mt-2"
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
         <p className="text-blue-200 text-sm text-center mt-6">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <span
-            onClick={() => navigate("/login")}
+            onClick={() => navigate('/login')}
             className="text-blue-400 hover:underline cursor-pointer"
           >
             Login
@@ -108,5 +107,5 @@ export default function Register() {
         </p>
       </div>
     </div>
-  );
+  )
 }

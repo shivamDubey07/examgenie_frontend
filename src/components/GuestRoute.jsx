@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-export default function ProtectedRoute({ children }) {
+export default function GuestRoute({ children }) {
   const { authStatus } = useAuth()
 
   if (authStatus === 'loading') {
@@ -12,14 +12,13 @@ export default function ProtectedRoute({ children }) {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
           </svg>
-          <p className="text-blue-200 text-sm">Restoring session...</p>
         </div>
       </div>
     )
   }
 
-  if (authStatus === 'unauthenticated') {
-    return <Navigate to="/login" replace />
+  if (authStatus === 'authenticated') {
+    return <Navigate to="/dashboard" replace />
   }
 
   return children
